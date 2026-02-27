@@ -1,0 +1,2689 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinControl</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b4f6c">
+
+<!-- CHART JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- CSS -->
+<style>
+
+/* ===== CSS VARIABLES ===== */
+:root {
+    --bg-dark: #0f172a;
+    --bg-card: #1e293b;
+    --bg-input: #334155;
+    --border-color: #475569;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --cold-secondary: #01baef;
+    --hot-primary: #fb8500;
+    --hot-warning: #f94144;
+    --success: #20bf55;
+    --danger: #f94144;
+}
+
+/* ===== RESET & BASE ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+
+/* ===== UTILITIES ===== */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* ===== HEADER ===== */
+.header {
+    background: linear-gradient(135deg, #0b4f6c 0%, #01baef 100%);
+    padding: 24px;
+    border-radius: 0 0 30px 30px;
+    box-shadow: 0 10px 40px rgba(1, 186, 239, 0.3);
+    color: white;
+}
+
+.month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.month-nav button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.month-nav button:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.month-title {
+    font-size: 18px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.balance-section {
+    text-align: center;
+    margin-top: 8px;
+}
+
+.balance-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+    margin-bottom: 4px;
+}
+
+.balance-amount {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.balance-amount.negative {
+    color: var(--danger);
+}
+
+.summary {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.summary-item {
+    text-align: center;
+}
+
+.summary-label {
+    font-size: 11px;
+    opacity: 0.8;
+    margin-bottom: 4px;
+}
+
+.summary-value {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.income-value { color: var(--success); }
+.expense-value { color: var(--danger); }
+
+/* ===== CONTAINER & CARDS ===== */
+.container {
+    padding: 20px;
+    padding-bottom: 100px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.card {
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.btn-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--cold-secondary);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.btn-icon:hover {
+    transform: scale(1.1);
+}
+
+/* ===== CHART ===== */
+.chart-container {
+    height: 200px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.donut-chart {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    position: relative;
+}
+
+.donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.donut-center .amount {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.donut-center .amount.positive { color: var(--success); }
+.donut-center .amount.negative { color: var(--danger); }
+
+.donut-center .label {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    font-size: 11px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-dark);
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+
+.legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+/* ===== CHART JS CONTAINER ===== */
+.chartjs-container {
+    height: 250px;
+    margin-bottom: 16px;
+    position: relative;
+}
+
+/* ===== TABS ===== */
+.tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    scroll-snap-type: x mandatory;
+}
+
+.tab {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    scroll-snap-align: center;
+    flex-shrink: 0;
+}
+
+.tab.active {
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.tab.active.all {
+    background: var(--hot-primary);
+    box-shadow: 0 4px 15px rgba(251, 133, 0, 0.3);
+}
+
+.tab.active.income {
+    background: var(--success);
+    box-shadow: 0 4px 15px rgba(32, 191, 85, 0.3);
+}
+
+.tab.active.expense {
+    background: var(--danger);
+    box-shadow: 0 4px 15px rgba(249, 65, 68, 0.3);
+}
+
+/* ===== TRANSACTIONS SECTION ===== */
+.transactions-section {
+    margin-bottom: 32px;
+}
+
+.transactions-spacer {
+    height: 40px;
+}
+
+/* ===== EMPTY STATE MAILBOX ===== */
+.empty-mailbox {
+    text-align: center;
+    padding: 48px 32px;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.mailbox-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
+}
+
+.empty-mailbox-text {
+    color: var(--text-secondary);
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.empty-mailbox-hint {
+    color: var(--text-secondary);
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+/* ===== TRANSACTION LIST ===== */
+.transaction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.transaction-item {
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.transaction-item:hover {
+    border-color: var(--cold-secondary);
+}
+
+.transaction-item.pressing {
+    transform: scale(0.98);
+    opacity: 0.8;
+}
+
+.transaction-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.category-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.transaction-details h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.transaction-details p {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.transaction-amount {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.transaction-amount.income { color: var(--success); }
+.transaction-amount.expense { color: var(--danger); }
+
+/* ===== FIXED EXPENSES ===== */
+.fixed-expenses-section {
+    margin-top: 32px;
+}
+
+.fixed-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-dark);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 8px;
+}
+
+.fixed-item.paid {
+    border-color: rgba(32, 191, 85, 0.3);
+}
+
+.checkbox {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    background: transparent;
+}
+
+.checkbox.checked {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+.fixed-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.fixed-info h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fixed-info h4.paid {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+}
+
+.fixed-info p {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.fixed-amount {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--danger);
+}
+
+.fixed-amount.paid {
+    color: var(--text-secondary);
+}
+
+/* ===== FUTURE EXPENSES ===== */
+.future-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: var(--bg-dark);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 8px;
+}
+
+.future-desc {
+    font-size: 14px;
+    font-weight: 500;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 12px;
+}
+
+.future-amount {
+    font-weight: 700;
+    color: var(--danger);
+    font-size: 14px;
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* ===== NAVIGATION ===== */
+.navigation {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 70px;
+    padding: 0 16px;
+    z-index: 40;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.nav-item.active {
+    color: var(--cold-secondary);
+}
+
+.nav-item svg {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+}
+
+.nav-item span {
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.nav-spacer {
+    width: 64px;
+}
+
+/* ===== FAB ===== */
+.fab {
+    position: fixed;
+    bottom: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--hot-primary) 0%, var(--hot-warning) 100%);
+    border-radius: 50%;
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 50;
+    box-shadow: 0 10px 25px rgba(251, 133, 0, 0.5);
+    transition: transform 0.2s;
+}
+
+.fab:hover {
+    transform: translateX(-50%) scale(1.1);
+}
+
+.fab:active {
+    transform: translateX(-50%) scale(0.95);
+}
+
+/* ===== MODALS ===== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal {
+    background: var(--bg-card);
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    border-radius: 24px 24px 0 0;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.3s;
+}
+
+.modal-overlay.active .modal {
+    transform: translateY(0);
+}
+
+@media (min-width: 640px) {
+    .modal-overlay {
+        align-items: center;
+        padding: 16px;
+    }
+    
+    .modal {
+        border-radius: 24px;
+    }
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.btn-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-input);
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.form-input {
+    width: 100%;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-input:focus {
+    border-color: var(--cold-secondary);
+}
+
+.form-input.large {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.form-input.emoji-input {
+    font-size: 28px;
+    text-align: center;
+}
+
+.type-selector {
+    display: flex;
+    background: var(--bg-input);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 16px;
+}
+
+.type-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.type-btn.active.expense {
+    background: var(--danger);
+    color: white;
+    box-shadow: 0 2px 8px rgba(249, 65, 68, 0.3);
+}
+
+.type-btn.active.income {
+    background: var(--success);
+    color: white;
+    box-shadow: 0 2px 8px rgba(32, 191, 85, 0.3);
+}
+
+/* ===== CATEGORY GRID ===== */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 480px) {
+    .category-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.category-item {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-dark);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.category-item:hover {
+    border-color: var(--border-color);
+}
+
+.category-item.selected {
+    transform: scale(1.05);
+}
+
+.category-item.pressing {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+
+.category-item .emoji {
+    font-size: 24px;
+    margin-bottom: 4px;
+    pointer-events: none;
+}
+
+.category-item .name {
+    font-size: 10px;
+    font-weight: 500;
+    text-align: center;
+    padding: 0 4px;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.btn-add-category {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-dark);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.btn-add-category:hover {
+    border-color: var(--cold-secondary);
+    color: var(--cold-secondary);
+}
+
+/* ===== COLOR PICKER ===== */
+.color-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.color-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.color-input {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    background: var(--bg-dark);
+    padding: 4px;
+}
+
+.color-presets {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+}
+
+.color-preset {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.color-preset:hover {
+    transform: scale(1.1);
+}
+
+.color-preset.selected {
+    border-color: white;
+    transform: scale(1.15);
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.color-hex-input {
+    flex: 1;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-family: monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+/* ===== MODAL FOOTER ===== */
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--cold-secondary) 0%, #0b4f6c 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(1, 186, 239, 0.3);
+    transition: transform 0.2s;
+}
+
+.btn-primary:hover {
+    transform: scale(1.02);
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-secondary {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.btn-danger {
+    width: 100%;
+    padding: 16px;
+    background: var(--danger);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: transform 0.2s;
+}
+
+.btn-danger:hover {
+    transform: scale(1.02);
+}
+
+/* ===== DELETE CONFIRM MODAL ===== */
+.delete-confirm-text {
+    text-align: center;
+    font-size: 16px;
+    margin-bottom: 24px;
+    color: var(--text-primary);
+}
+
+.delete-item-preview {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ===== HISTORY ===== */
+.history-year {
+    background: var(--bg-card);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.year-header {
+    width: 100%;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.year-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.year-content {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.month-cell {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.month-cell:hover {
+    border-color: var(--cold-secondary);
+    background: rgba(1, 186, 239, 0.1);
+}
+
+.month-cell.empty {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.month-cell.empty:hover {
+    border-color: var(--border-color);
+    background: transparent;
+}
+
+.month-name {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.month-balance {
+    font-size: 10px;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* ===== TOAST ===== */
+.toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.3s;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+</style>
+
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+
+// ===== STORE =====
+const Store = {
+    data: {
+        transactions: [],
+        categories: [
+            { id: 'cat-1', type: 'expense', icon: '🍔', name: 'Comida', color: '#F94144', isDefault: true },
+            { id: 'cat-2', type: 'expense', icon: '🚗', name: 'Transporte', color: '#F3722C', isDefault: true },
+            { id: 'cat-3', type: 'expense', icon: '💡', name: 'Contas', color: '#90BE6D', isDefault: true },
+            { id: 'cat-4', type: 'income', icon: '💼', name: 'Salário', color: '#20BF55', isDefault: true },
+        ],
+        fixedExpenses: [],
+        futureExpenses: [],
+        fixedStatus: {}
+    },
+
+    init() {
+        const saved = localStorage.getItem('fincontrol_data');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                Object.assign(this.data, parsed);
+            } catch (e) {
+                console.error('Failed to load data', e);
+            }
+        }
+        this.save();
+    },
+
+    save() {
+        localStorage.setItem('fincontrol_data', JSON.stringify(this.data));
+    },
+
+    addTransaction(transaction) {
+        const newTransaction = {
+            ...transaction,
+            id: Date.now().toString()
+        };
+        this.data.transactions.push(newTransaction);
+        this.save();
+        return newTransaction;
+    },
+
+    deleteTransaction(id) {
+        this.data.transactions = this.data.transactions.filter(t => t.id !== id);
+        this.save();
+    },
+
+    addCategory(category) {
+        const newCategory = {
+            ...category,
+            id: Date.now().toString()
+        };
+        this.data.categories.push(newCategory);
+        this.save();
+        return newCategory;
+    },
+
+    updateCategory(id, updates) {
+        const index = this.data.categories.findIndex(c => c.id === id);
+        if (index !== -1) {
+            this.data.categories[index] = { ...this.data.categories[index], ...updates };
+            this.save();
+        }
+    },
+
+    deleteCategory(id) {
+        this.data.categories = this.data.categories.filter(c => c.id !== id);
+        this.save();
+    },
+
+    addFixedExpense(expense) {
+        const newExpense = {
+            ...expense,
+            id: Date.now().toString()
+        };
+        this.data.fixedExpenses.push(newExpense);
+        this.save();
+        return newExpense;
+    },
+
+    deleteFixedExpense(id) {
+        this.data.fixedExpenses = this.data.fixedExpenses.filter(f => f.id !== id);
+        this.save();
+    },
+
+    toggleFixedStatus(id, yearMonth) {
+        if (!this.data.fixedStatus[yearMonth]) {
+            this.data.fixedStatus[yearMonth] = {};
+        }
+        this.data.fixedStatus[yearMonth][id] = !this.data.fixedStatus[yearMonth][id];
+        this.save();
+    },
+
+    addFutureExpense(expense) {
+        const newExpense = {
+            ...expense,
+            id: Date.now().toString()
+        };
+        this.data.futureExpenses.push(newExpense);
+        this.save();
+        return newExpense;
+    },
+
+    deleteFutureExpense(id) {
+        this.data.futureExpenses = this.data.futureExpenses.filter(f => f.id !== id);
+        this.save();
+    }
+};
+
+// ===== UTILS =====
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(value);
+};
+
+const formatDate = (date) => {
+    const d = new Date(date);
+    return d.toLocaleDateString('pt-BR');
+};
+
+const getMonthYear = (date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getMonthName = (monthNum) => {
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    return months[monthNum - 1];
+};
+
+const getFullMonthName = (monthNum) => {
+    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    return months[monthNum - 1];
+};
+
+// ===== MAILBOX SVG =====
+const MailboxIcon = `
+<svg class="mailbox-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="6" width="20" height="14" rx="2" fill="#3b82f6"/>
+    <rect x="2" y="6" width="20" height="10" rx="2" fill="#60a5fa"/>
+    <rect x="6" y="10" width="8" height="6" rx="1" fill="#1e3a8a"/>
+    <circle cx="16" cy="12" r="2" fill="#fbbf24"/>
+    <rect x="18" y="8" width="4" height="3" rx="1" fill="#ef4444"/>
+    <rect x="10" y="20" width="4" height="3" fill="#8b5cf6"/>
+</svg>
+`;
+
+// ===== ICONS =====
+const Icons = {
+    home: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+    chart: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+    plus: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`,
+    chevronLeft: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`,
+    chevronRight: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`,
+    check: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    x: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+    edit: `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`,
+    trash: `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+    chevronDown: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`,
+    trashLarge: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`
+};
+
+// ===== ROUTER =====
+const Router = {
+    currentRoute: '/',
+    
+    navigate(route) {
+        this.currentRoute = route;
+        App.render();
+    }
+};
+
+// ===== MODAL MANAGER =====
+const Modal = {
+    current: null,
+    props: {},
+
+    open(type, props = {}) {
+        this.current = type;
+        this.props = props;
+        App.render();
+        setTimeout(() => {
+            document.querySelector('.modal-overlay')?.classList.add('active');
+        }, 10);
+    },
+
+    close() {
+        document.querySelector('.modal-overlay')?.classList.remove('active');
+        setTimeout(() => {
+            this.current = null;
+            this.props = {};
+            App.render();
+        }, 200);
+    }
+};
+
+// ===== LONG PRESS HANDLER =====
+const LongPress = {
+    timers: new Map(),
+
+    start(element, callback, duration = 600) {
+        element.classList.add('pressing');
+        const timer = setTimeout(() => {
+            element.classList.remove('pressing');
+            callback();
+        }, duration);
+        this.timers.set(element, timer);
+    },
+
+    end(element) {
+        element.classList.remove('pressing');
+        const timer = this.timers.get(element);
+        if (timer) {
+            clearTimeout(timer);
+            this.timers.delete(element);
+        }
+    },
+
+    cancel(element) {
+        this.end(element);
+    }
+};
+
+// ===== CHART MANAGER =====
+const ChartManager = {
+    instance: null,
+
+    destroy() {
+        if (this.instance) {
+            this.instance.destroy();
+            this.instance = null;
+        }
+    },
+
+    render(containerId, data, balance) {
+        this.destroy();
+        
+        const ctx = document.getElementById(containerId);
+        if (!ctx) return;
+
+        const total = data.reduce((acc, item) => acc + item.value, 0);
+        
+        this.instance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => d.name),
+                datasets: [{
+                    data: data.map(d => d.value),
+                    backgroundColor: data.map(d => d.color),
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'var(--bg-dark)',
+                        titleColor: 'var(--text-primary)',
+                        bodyColor: 'var(--text-primary)',
+                        borderColor: 'var(--border-color)',
+                        borderWidth: 1,
+                        cornerRadius: 12,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + formatCurrency(context.parsed);
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [{
+                id: 'centerText',
+                beforeDraw: function(chart) {
+                    const width = chart.width,
+                          height = chart.height,
+                          ctx = chart.ctx;
+                    
+                    ctx.restore();
+                    
+                    // Draw balance - SEMPRE BRANCO
+                    const fontSize = (height / 114).toFixed(2);
+                    ctx.font = `bold ${fontSize}em sans-serif`;
+                    ctx.textBaseline = "middle";
+                    ctx.fillStyle = '#ffffff'; // BRANCO SEMPRE
+                    
+                    const text = formatCurrency(balance),
+                          textX = Math.round((width - ctx.measureText(text).width) / 2),
+                          textY = height / 2 - 5;
+                    
+                    ctx.fillText(text, textX, textY);
+                    
+                    // Draw label
+                    ctx.font = `${(height / 200).toFixed(2)}em sans-serif`;
+                    ctx.fillStyle = 'var(--text-secondary)';
+                    const label = 'Saldo',
+                          labelX = Math.round((width - ctx.measureText(label).width) / 2),
+                          labelY = height / 2 + 15;
+                    
+                    ctx.fillText(label, labelX, labelY);
+                    ctx.save();
+                }
+            }]
+        });
+    }
+};
+
+// ===== EMPTY STATE COMPONENT =====
+const EmptyMailbox = () => `
+    <div class="empty-mailbox">
+        ${MailboxIcon}
+        <div class="empty-mailbox-text">Nenhuma transação neste mês.</div>
+        <div class="empty-mailbox-hint">Clique no + para adicionar</div>
+    </div>
+`;
+
+// ===== DASHBOARD VIEW =====
+const DashboardView = {
+    currentDate: new Date(),
+    activeTab: 'all',
+
+    render() {
+        const yearMonth = getMonthYear(this.currentDate);
+        const monthTransactions = Store.data.transactions.filter(t => t.date.startsWith(yearMonth));
+        
+        const incomes = monthTransactions
+            .filter(t => t.type === 'income')
+            .reduce((acc, t) => acc + t.value, 0);
+        
+        const expenses = monthTransactions
+            .filter(t => t.type === 'expense')
+            .reduce((acc, t) => acc + t.value, 0);
+
+        const paidFixed = Store.data.fixedExpenses.filter(f => 
+            Store.data.fixedStatus[yearMonth]?.[f.id]
+        );
+        const paidFixedTotal = paidFixed.reduce((acc, f) => acc + f.value, 0);
+
+        const totalExpenses = expenses + paidFixedTotal;
+        const balance = incomes - totalExpenses;
+
+        // Chart data and used categories
+        const categoryMap = new Map();
+        
+        monthTransactions.forEach(t => {
+            const cat = Store.data.categories.find(c => c.id === t.categoryId);
+            if (!cat) return;
+            if (!categoryMap.has(cat.id)) {
+                categoryMap.set(cat.id, { id: cat.id, name: cat.name, value: 0, color: cat.color, icon: cat.icon });
+            }
+            categoryMap.get(cat.id).value += t.value;
+        });
+
+        paidFixed.forEach(f => {
+            const cat = Store.data.categories.find(c => c.id === f.categoryId);
+            if (!cat) return;
+            if (!categoryMap.has(cat.id)) {
+                categoryMap.set(cat.id, { id: cat.id, name: cat.name, value: 0, color: cat.color, icon: cat.icon });
+            }
+            categoryMap.get(cat.id).value += f.value;
+        });
+
+        const usedCategories = Array.from(categoryMap.values());
+        const hasData = usedCategories.length > 0;
+        const chartData = hasData ? usedCategories : [{ id: 'none', name: 'Sem dados', value: 1, color: '#334155', icon: '❓' }];
+
+        // Filter transactions
+        const displayTransactions = monthTransactions
+            .filter(t => {
+                if (this.activeTab === 'all') return true;
+                if (this.activeTab === 'income') return t.type === 'income';
+                if (this.activeTab === 'expense') return t.type === 'expense';
+                return t.categoryId === this.activeTab;
+            })
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Schedule Chart.js render after DOM update
+        if (hasData) {
+            setTimeout(() => {
+                ChartManager.render('mainChart', usedCategories, balance);
+            }, 0);
+        }
+
+        return `
+            <div class="fade-in">
+                <div class="header">
+                    <div class="month-nav">
+                        <button onclick="DashboardView.prevMonth()">
+                            ${Icons.chevronLeft}
+                        </button>
+                        <span class="month-title">
+                            ${getFullMonthName(this.currentDate.getMonth() + 1)} ${this.currentDate.getFullYear()}
+                        </span>
+                        <button onclick="DashboardView.nextMonth()">
+                            ${Icons.chevronRight}
+                        </button>
+                    </div>
+                    <div class="balance-section">
+                        <div class="balance-label">Saldo Disponível</div>
+                        <div class="balance-amount ${balance < 0 ? 'negative' : ''}">
+                            ${formatCurrency(balance)}
+                        </div>
+                        <div class="summary">
+                            <div class="summary-item">
+                                <div class="summary-label">ENTRADAS</div>
+                                <div class="summary-value income-value">${formatCurrency(incomes)}</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-label">SAÍDAS</div>
+                                <div class="summary-value expense-value">${formatCurrency(totalExpenses)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container">
+                    <!-- Chart with Chart.js -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span>📊 Ganhos vs Gastos</span>
+                        </div>
+                        <div class="chartjs-container">
+                            <canvas id="mainChart"></canvas>
+                        </div>
+                        
+                        ${hasData ? `
+                        <div class="chart-legend">
+                            ${usedCategories.map(item => `
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: ${item.color}"></div>
+                                    <span>${item.name}: ${formatCurrency(item.value)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : `
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #334155"></div>
+                                <span>Sem dados</span>
+                            </div>
+                        </div>
+                        `}
+                    </div>
+
+                    <!-- Transactions -->
+                    <div class="transactions-section">
+                        <div class="card-header" style="margin-bottom: 12px;">
+                            <span>🏷️ Transações do Mês</span>
+                        </div>
+                        
+                        <div class="tabs no-scrollbar">
+                            <button class="tab all ${this.activeTab === 'all' ? 'active all' : ''}" 
+                                    onclick="DashboardView.setTab('all')">
+                                📊 Todos
+                            </button>
+                            <button class="tab income ${this.activeTab === 'income' ? 'active income' : ''}" 
+                                    onclick="DashboardView.setTab('income')">
+                                ⬇️ Entradas
+                            </button>
+                            <button class="tab expense ${this.activeTab === 'expense' ? 'active expense' : ''}" 
+                                    onclick="DashboardView.setTab('expense')">
+                                ⬆️ Saídas
+                            </button>
+                            
+                            ${usedCategories.map(cat => `
+                                <button class="tab ${this.activeTab === cat.id ? 'active' : ''}" 
+                                        onclick="DashboardView.setTab('${cat.id}')"
+                                        style="${this.activeTab === cat.id ? `background: ${cat.color}; border-color: ${cat.color};` : ''}">
+                                    ${cat.icon} ${cat.name}
+                                </button>
+                            `).join('')}
+                        </div>
+
+                        ${displayTransactions.length === 0 ? `
+                            ${EmptyMailbox()}
+                            <div class="transactions-spacer"></div>
+                        ` : `
+                            <div class="transaction-list">
+                                ${displayTransactions.map(t => {
+                                    const cat = Store.data.categories.find(c => c.id === t.categoryId);
+                                    if (!cat) return '';
+                                    return `
+                                        <div class="transaction-item" 
+                                             data-trans-id="${t.id}"
+                                             onmousedown="TransactionDelete.startPress(this, '${t.id}')"
+                                             onmouseup="TransactionDelete.endPress(this)"
+                                             onmouseleave="TransactionDelete.cancelPress(this)"
+                                             ontouchstart="TransactionDelete.startPress(this, '${t.id}')"
+                                             ontouchend="TransactionDelete.endPress(this)"
+                                             ontouchcancel="TransactionDelete.cancelPress(this)">
+                                            <div class="transaction-info">
+                                                <div class="category-icon" style="background: ${cat.color}20; color: ${cat.color}">
+                                                    ${cat.icon}
+                                                </div>
+                                                <div class="transaction-details">
+                                                    <h4>${t.desc || cat.name}</h4>
+                                                    <p>${formatDate(t.date)}</p>
+                                                </div>
+                                            </div>
+                                            <span class="transaction-amount ${t.type}">
+                                                ${t.type === 'income' ? '+' : '-'}${formatCurrency(t.value)}
+                                            </span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                            <div class="transactions-spacer"></div>
+                        `}
+                    </div>
+
+                    <!-- Fixed Expenses -->
+                    <div class="fixed-expenses-section">
+                        <div class="card">
+                            <div class="card-header">
+                                <span>📋 Gastos Fixos</span>
+                                <button class="btn-icon" onclick="Modal.open('fixed')">
+                                    ${Icons.plus}
+                                </button>
+                            </div>
+                            <div>
+                                ${Store.data.fixedExpenses.length === 0 ? 
+                                    '<div class="empty-state" style="padding: 16px;">Nenhum gasto fixo cadastrado.</div>' :
+                                    Store.data.fixedExpenses.map(f => {
+                                        const cat = Store.data.categories.find(c => c.id === f.categoryId);
+                                        const isPaid = !!Store.data.fixedStatus[yearMonth]?.[f.id];
+                                        return `
+                                            <div class="fixed-item ${isPaid ? 'paid' : ''}">
+                                                <button class="checkbox ${isPaid ? 'checked' : ''}" 
+                                                        onclick="DashboardView.toggleFixed('${f.id}')">
+                                                    ${isPaid ? Icons.check : ''}
+                                                </button>
+                                                <div class="fixed-info">
+                                                    <h4 class="${isPaid ? 'paid' : ''}">${f.name}</h4>
+                                                    <p>Dia ${f.day} • ${cat?.icon || ''} ${cat?.name || ''}</p>
+                                                </div>
+                                                <span class="fixed-amount ${isPaid ? 'paid' : ''}">
+                                                    ${formatCurrency(f.value)}
+                                                </span>
+                                                <button class="btn-delete" style="opacity: 1;" 
+                                                        onclick="DashboardView.deleteFixed('${f.id}')">
+                                                    ${Icons.x}
+                                                </button>
+                                            </div>
+                                        `;
+                                    }).join('')
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Future Expenses -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span>💡 Gastos Futuros</span>
+                            <button class="btn-icon" onclick="Modal.open('future')">
+                                ${Icons.plus}
+                            </button>
+                        </div>
+                        <div>
+                            ${Store.data.futureExpenses.length === 0 ? 
+                                '<div class="empty-state" style="padding: 16px;">Nenhum gasto futuro cadastrado.</div>' :
+                                Store.data.futureExpenses.map(f => `
+                                    <div class="future-item">
+                                        <span class="future-desc">${f.desc}</span>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span class="future-amount">${formatCurrency(f.value)}</span>
+                                            <button class="btn-delete" style="opacity: 1;" 
+                                                    onclick="DashboardView.deleteFuture('${f.id}')">
+                                                ${Icons.x}
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    prevMonth() {
+        ChartManager.destroy();
+        this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
+        App.render();
+    },
+
+    nextMonth() {
+        ChartManager.destroy();
+        this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
+        App.render();
+    },
+
+    setTab(tab) {
+        this.activeTab = tab;
+        App.render();
+    },
+
+    toggleFixed(id) {
+        const yearMonth = getMonthYear(this.currentDate);
+        Store.toggleFixedStatus(id, yearMonth);
+        App.render();
+    },
+
+    deleteFixed(id) {
+        if (confirm('Tem certeza que deseja excluir este gasto fixo?')) {
+            Store.deleteFixedExpense(id);
+            App.render();
+        }
+    },
+
+    deleteFuture(id) {
+        if (confirm('Tem certeza que deseja excluir este gasto futuro?')) {
+            Store.deleteFutureExpense(id);
+            App.render();
+        }
+    }
+};
+
+// ===== TRANSACTION DELETE HANDLER =====
+const TransactionDelete = {
+    timers: new Map(),
+    pendingId: null,
+
+    startPress(element, id) {
+        element.classList.add('pressing');
+        const timer = setTimeout(() => {
+            element.classList.remove('pressing');
+            this.showConfirmModal(id);
+        }, 800); // 800ms para deletar
+        this.timers.set(element, timer);
+    },
+
+    endPress(element) {
+        if (this.timers.has(element)) {
+            clearTimeout(this.timers.get(element));
+            this.timers.delete(element);
+            element.classList.remove('pressing');
+        }
+    },
+
+    cancelPress(element) {
+        this.endPress(element);
+    },
+
+    showConfirmModal(id) {
+        this.pendingId = id;
+        const transaction = Store.data.transactions.find(t => t.id === id);
+        if (!transaction) return;
+
+        const cat = Store.data.categories.find(c => c.id === transaction.categoryId);
+        
+        Modal.open('deleteConfirm', { 
+            id, 
+            transaction,
+            category: cat 
+        });
+    },
+
+    confirm() {
+        if (this.pendingId) {
+            Store.deleteTransaction(this.pendingId);
+            this.pendingId = null;
+            Modal.close();
+        }
+    },
+
+    cancel() {
+        this.pendingId = null;
+        Modal.close();
+    }
+};
+
+// ===== DELETE CONFIRM MODAL =====
+const DeleteConfirmModal = {
+    render(data) {
+        const { transaction, category } = data;
+        
+        return `
+            <div class="modal-overlay active" style="z-index: 120;" onclick="if(event.target===this) TransactionDelete.cancel()">
+                <div class="modal" style="max-width: 360px;">
+                    <div class="modal-header">
+                        <h2>Excluir Transação?</h2>
+                        <button class="btn-close" onclick="TransactionDelete.cancel()">
+                            ${Icons.x}
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="delete-confirm-text">Tem certeza que deseja excluir esta transação?</p>
+                        
+                        <div class="delete-item-preview">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="category-icon" style="background: ${category?.color}20; color: ${category?.color}; width: 44px; height: 44px;">
+                                    ${category?.icon || ''}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 14px;">${transaction.desc || category?.name}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">${formatDate(transaction.date)}</div>
+                                </div>
+                            </div>
+                            <span class="transaction-amount ${transaction.type}" style="font-size: 16px;">
+                                ${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.value)}
+                            </span>
+                        </div>
+
+                        <button class="btn-danger" onclick="TransactionDelete.confirm()">
+                            Sim, Excluir
+                        </button>
+                        <button class="btn-secondary" onclick="TransactionDelete.cancel()">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+};
+
+// ===== HISTORY VIEW =====
+const HistoryView = {
+    expandedYears: {},
+
+    render() {
+        const historyData = {};
+        
+        Store.data.transactions.forEach(t => {
+            const year = t.date.substring(0, 4);
+            const month = t.date.substring(0, 7);
+            
+            if (!historyData[year]) historyData[year] = {};
+            if (!historyData[year][month]) {
+                historyData[year][month] = { incomes: 0, expenses: 0, transactions: [] };
+            }
+            
+            historyData[year][month].transactions.push(t);
+            if (t.type === 'income') {
+                historyData[year][month].incomes += t.value;
+            } else {
+                historyData[year][month].expenses += t.value;
+            }
+        });
+
+        Object.entries(Store.data.fixedStatus).forEach(([yearMonth, statuses]) => {
+            const year = yearMonth.substring(0, 4);
+            if (!historyData[year]) historyData[year] = {};
+            if (!historyData[year][yearMonth]) {
+                historyData[year][yearMonth] = { incomes: 0, expenses: 0, transactions: [] };
+            }
+
+            Store.data.fixedExpenses.forEach(f => {
+                if (statuses[f.id]) {
+                    historyData[year][yearMonth].expenses += f.value;
+                }
+            });
+        });
+
+        const sortedYears = Object.keys(historyData).sort((a, b) => b - a);
+
+        return `
+            <div class="container fade-in" style="padding-top: 24px;">
+                <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 24px; color: white;">Histórico</h1>
+                
+                ${sortedYears.length === 0 ? 
+                    '<div class="empty-state">Nenhum dado no histórico ainda.</div>' :
+                    sortedYears.map(year => `
+                        <div class="history-year">
+                            <button class="year-header" onclick="HistoryView.toggleYear('${year}')">
+                                <span>📅 ${year}</span>
+                                ${this.expandedYears[year] ? Icons.chevronDown : Icons.chevronRight}
+                            </button>
+                            ${this.expandedYears[year] ? `
+                                <div class="year-content">
+                                    ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
+                                        const monthNum = String(m).padStart(2, '0');
+                                        const yearMonth = `${year}-${monthNum}`;
+                                        const data = historyData[year]?.[yearMonth];
+                                        const balance = data ? data.incomes - data.expenses : 0;
+                                        
+                                        return `
+                                            <button class="month-cell ${!data ? 'empty' : ''}" 
+                                                    ${data ? `onclick="HistoryView.showMonthDetail('${yearMonth}')"` : ''}>
+                                                <span class="month-name">${getMonthName(m)}</span>
+                                                ${data ? `
+                                                    <span class="month-balance" style="color: ${balance >= 0 ? 'var(--success)' : 'var(--danger)'}">
+                                                        ${balance >= 0 ? '+' : ''}${formatCurrency(balance)}
+                                                    </span>
+                                                ` : ''}
+                                            </button>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')
+                }
+            </div>
+        `;
+    },
+
+    toggleYear(year) {
+        this.expandedYears[year] = !this.expandedYears[year];
+        App.render();
+    },
+
+    showMonthDetail(yearMonth) {
+        Modal.open('monthDetail', { yearMonth });
+    }
+};
+
+// ===== TRANSACTION MODAL =====
+const TransactionModal = {
+    type: 'expense',
+    value: '',
+    desc: '',
+    date: new Date().toISOString().split('T')[0],
+    selectedCatId: '',
+    showCategoryModal: false,
+    editingCategory: null,
+
+    render() {
+        const filteredCategories = Store.data.categories.filter(c => c.type === this.type);
+
+        return `
+            <div class="modal-overlay ${Modal.current === 'transaction' ? 'active' : ''}" onclick="if(event.target===this) Modal.close()">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>${this.editingCategory ? 'Editar' : 'Nova'} Transação</h2>
+                        <button class="btn-close" onclick="Modal.close()">
+                            ${Icons.x}
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="type-selector">
+                            <button class="type-btn expense ${this.type === 'expense' ? 'active expense' : ''}" 
+                                    onclick="TransactionModal.setType('expense')">
+                                ⬆️ Despesa
+                            </button>
+                            <button class="type-btn income ${this.type === 'income' ? 'active income' : ''}" 
+                                    onclick="TransactionModal.setType('income')">
+                                ⬇️ Receita
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Valor</label>
+                            <input type="number" step="0.01" class="form-input large" 
+                                   value="${this.value}" 
+                                   oninput="TransactionModal.value = this.value"
+                                   placeholder="0,00">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <input type="text" class="form-input" 
+                                   value="${this.desc}" 
+                                   oninput="TransactionModal.desc = this.value"
+                                   placeholder="Ex: Supermercado">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Data</label>
+                            <input type="date" class="form-input" 
+                                   value="${this.date}" 
+                                   oninput="TransactionModal.date = this.value"
+                                   style="color-scheme: dark;">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Categoria (Segure para editar)</label>
+                            <div class="category-grid">
+                                ${filteredCategories.map(cat => `
+                                    <div class="category-item ${this.selectedCatId === cat.id ? 'selected' : ''}" 
+                                         data-cat-id="${cat.id}"
+                                         onmousedown="TransactionModal.handleMouseDown(this, '${cat.id}')"
+                                         onmouseup="TransactionModal.handleMouseUp(this)"
+                                         onmouseleave="TransactionModal.handleMouseLeave(this)"
+                                         ontouchstart="TransactionModal.handleTouchStart(this, '${cat.id}')"
+                                         ontouchend="TransactionModal.handleTouchEnd(this)"
+                                         style="${this.selectedCatId === cat.id ? `border-color: ${cat.color}; background: ${cat.color}20` : ''}">
+                                        <span class="emoji">${cat.icon}</span>
+                                        <span class="name">${cat.name}</span>
+                                    </div>
+                                `).join('')}
+                                <button class="btn-add-category" onclick="TransactionModal.addCategory()">
+                                    <span style="font-size: 24px; margin-bottom: 4px;">+</span>
+                                    <span class="name">Nova</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-primary" onclick="TransactionModal.save()">
+                            Salvar Transação
+                        </button>
+                    </div>
+                </div>
+            </div>
+            ${this.showCategoryModal ? CategoryModal.render(this.type, this.editingCategory) : ''}
+        `;
+    },
+
+    setType(type) {
+        this.type = type;
+        this.selectedCatId = '';
+        App.render();
+    },
+
+    handleMouseDown(element, catId) {
+        LongPress.start(element, () => {
+            this.editCategory(catId);
+        }, 600);
+    },
+
+    handleMouseUp(element) {
+        if (LongPress.timers.has(element)) {
+            LongPress.end(element);
+            this.selectCategory(element.dataset.catId);
+        }
+    },
+
+    handleMouseLeave(element) {
+        LongPress.cancel(element);
+    },
+
+    handleTouchStart(element, catId) {
+        LongPress.start(element, () => {
+            this.editCategory(catId);
+        }, 600);
+    },
+
+    handleTouchEnd(element) {
+        if (LongPress.timers.has(element)) {
+            LongPress.end(element);
+            this.selectCategory(element.dataset.catId);
+        }
+    },
+
+    selectCategory(id) {
+        this.selectedCatId = id;
+        App.render();
+    },
+
+    addCategory() {
+        this.editingCategory = null;
+        this.showCategoryModal = true;
+        App.render();
+    },
+
+    editCategory(id) {
+        const cat = Store.data.categories.find(c => c.id === id);
+        if (cat) {
+            this.editingCategory = cat;
+            this.showCategoryModal = true;
+            App.render();
+        }
+    },
+
+    save() {
+        if (!this.value || !this.selectedCatId) {
+            alert('Preencha o valor e selecione a categoria');
+            return;
+        }
+
+        Store.addTransaction({
+            type: this.type,
+            value: parseFloat(this.value),
+            desc: this.desc,
+            date: this.date,
+            categoryId: this.selectedCatId
+        });
+
+        this.reset();
+        Modal.close();
+    },
+
+    reset() {
+        this.type = 'expense';
+        this.value = '';
+        this.desc = '';
+        this.date = new Date().toISOString().split('T')[0];
+        this.selectedCatId = '';
+    },
+
+    closeCategoryModal() {
+        this.showCategoryModal = false;
+        this.editingCategory = null;
+        App.render();
+    }
+};
+
+// ===== CATEGORY MODAL =====
+const CategoryModal = {
+    icon: '📦',
+    name: '',
+    color: '#01BAEF',
+
+    render(type, editingCategory = null) {
+        if (editingCategory) {
+            this.icon = editingCategory.icon;
+            this.name = editingCategory.name;
+            this.color = editingCategory.color;
+        } else {
+            this.icon = '📦';
+            this.name = '';
+            this.color = '#01BAEF';
+        }
+
+        const presetColors = [
+            '#F94144', '#F3722C', '#F8961E', '#F9C74F', 
+            '#90BE6D', '#43AA8B', '#577590', '#277DA1',
+            '#01BAEF', '#20BF55', '#9D4EDD', '#FF006E',
+            '#FF9F1C', '#2EC4B6', '#E71D36', '#011627'
+        ];
+
+        const isDefault = editingCategory?.isDefault || false;
+
+        return `
+            <div class="modal-overlay active" style="z-index: 110;" onclick="if(event.target===this) TransactionModal.closeCategoryModal()">
+                <div class="modal" style="max-width: 360px;">
+                    <div class="modal-header">
+                        <h2>${editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</h2>
+                        <button class="btn-close" onclick="TransactionModal.closeCategoryModal()">
+                            ${Icons.x}
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        ${isDefault ? `
+                            <div style="background: rgba(251, 133, 0, 0.1); border: 1px solid var(--hot-primary); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: var(--text-secondary);">
+                                ⚠️ Esta é uma categoria padrão do sistema.
+                            </div>
+                        ` : ''}
+                        
+                        <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                            <div style="width: 33%;">
+                                <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Emoji</label>
+                                <input type="text" maxlength="2" class="form-input emoji-input" 
+                                       value="${this.icon}" 
+                                       oninput="CategoryModal.icon = this.value"
+                                       placeholder="🍔">
+                            </div>
+                            <div style="width: 67%;">
+                                <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Nome</label>
+                                <input type="text" class="form-input" 
+                                       value="${this.name}" 
+                                       oninput="CategoryModal.name = this.value"
+                                       placeholder="Ex: Comida">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Cor da Categoria</label>
+                            <div class="color-picker">
+                                <div class="color-picker-row">
+                                    <input type="color" class="color-input" 
+                                           value="${this.color}" 
+                                           oninput="CategoryModal.color = this.value; document.getElementById('hex-input').value = this.value.toUpperCase()">
+                                    <div style="flex: 1;">
+                                        <p style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Escolha uma cor personalizada ou use as sugestões:</p>
+                                        <input type="text" id="hex-input" class="color-hex-input" 
+                                               value="${this.color.toUpperCase()}" 
+                                               oninput="CategoryModal.color = this.value; document.querySelector('.color-input').value = this.value">
+                                    </div>
+                                </div>
+                                <div class="color-presets">
+                                    ${presetColors.map(c => `
+                                        <button type="button"
+                                                class="color-preset ${this.color.toLowerCase() === c.toLowerCase() ? 'selected' : ''}" 
+                                                style="background: ${c}"
+                                                onclick="CategoryModal.color = '${c}'; document.querySelector('.color-input').value = '${c}'; document.getElementById('hex-input').value = '${c.toUpperCase()}'; document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('selected')); this.classList.add('selected');"></button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn-primary" style="margin-top: 20px;" 
+                                onclick="CategoryModal.save('${type}', ${editingCategory ? `'${editingCategory.id}'` : 'null'})">
+                            ${editingCategory ? 'Salvar Alterações' : 'Criar Categoria'}
+                        </button>
+                        
+                        ${editingCategory && !isDefault ? `
+                            <button class="btn-danger" onclick="CategoryModal.delete('${editingCategory.id}')">
+                                Excluir Categoria
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    save(type, editingId) {
+        if (!this.name || !this.icon) {
+            alert('Preencha ícone e nome');
+            return;
+        }
+
+        if (editingId) {
+            Store.updateCategory(editingId, {
+                icon: this.icon,
+                name: this.name,
+                color: this.color
+            });
+        } else {
+            Store.addCategory({
+                type,
+                icon: this.icon,
+                name: this.name,
+                color: this.color
+            });
+        }
+
+        TransactionModal.closeCategoryModal();
+    },
+
+    delete(id) {
+        if (confirm('Deseja realmente excluir esta categoria?')) {
+            Store.deleteCategory(id);
+            TransactionModal.closeCategoryModal();
+        }
+    }
+};
+
+// ===== FIXED MODAL =====
+const FixedModal = {
+    name: '',
+    value: '',
+    day: '',
+    categoryId: '',
+
+    render() {
+        const expenseCategories = Store.data.categories.filter(c => c.type === 'expense');
+
+        return `
+            <div class="modal-overlay ${Modal.current === 'fixed' ? 'active' : ''}" onclick="if(event.target===this) Modal.close()">
+                <div class="modal" style="max-width: 360px;">
+                    <div class="modal-header">
+                        <h2>Novo Gasto Fixo</h2>
+                        <button class="btn-close" onclick="Modal.close()">
+                            ${Icons.x}
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nome</label>
+                            <input type="text" class="form-input" 
+                                   value="${this.name}" 
+                                   oninput="FixedModal.name = this.value"
+                                   placeholder="Ex: Aluguel">
+                        </div>
+
+                        <div style="display: flex; gap: 16px;">
+                            <div class="form-group" style="width: 50%;">
+                                <label>Valor</label>
+                                <input type="number" step="0.01" class="form-input" 
+                                       value="${this.value}" 
+                                       oninput="FixedModal.value = this.value"
+                                       placeholder="0,00">
+                            </div>
+                            <div class="form-group" style="width: 50%;">
+                                <label>Dia Vencimento</label>
+                                <input type="number" min="1" max="31" class="form-input" 
+                                       value="${this.day}" 
+                                       oninput="FixedModal.day = this.value"
+                                       placeholder="Ex: 10">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Categoria</label>
+                            <select class="form-input" 
+                                    onchange="FixedModal.categoryId = this.value"
+                                    style="appearance: none; background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22><path d=%22m6 9 6 6 6-6%22/></svg>'); background-repeat: no-repeat; background-position: right 12px center; padding-right: 40px;">
+                                <option value="" disabled ${!this.categoryId ? 'selected' : ''}>Selecione...</option>
+                                ${expenseCategories.map(cat => `
+                                    <option value="${cat.id}" ${this.categoryId === cat.id ? 'selected' : ''}>${cat.icon} ${cat.name}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        <button class="btn-primary" style="margin-top: 20px;" onclick="FixedModal.save()">
+                            Adicionar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    save() {
+        if (!this.name || !this.value || !this.day || !this.categoryId) {
+            alert('Preencha todos os campos');
+            return;
+        }
+
+        Store.addFixedExpense({
+            name: this.name,
+            value: parseFloat(this.value),
+            day: parseInt(this.day),
+            categoryId: this.categoryId
+        });
+
+        this.reset();
+        Modal.close();
+    },
+
+    reset() {
+        this.name = '';
+        this.value = '';
+        this.day = '';
+        this.categoryId = '';
+    }
+};
+
+// ===== FUTURE MODAL =====
+const FutureModal = {
+    desc: '',
+    value: '',
+
+    render() {
+        return `
+            <div class="modal-overlay ${Modal.current === 'future' ? 'active' : ''}" onclick="if(event.target===this) Modal.close()">
+                <div class="modal" style="max-width: 360px;">
+                    <div class="modal-header">
+                        <h2>Gasto Futuro</h2>
+                        <button class="btn-close" onclick="Modal.close()">
+                            ${Icons.x}
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <input type="text" class="form-input" 
+                                   value="${this.desc}" 
+                                   oninput="FutureModal.desc = this.value"
+                                   placeholder="Ex: Novo celular">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Valor Estimado</label>
+                            <input type="number" step="0.01" class="form-input" 
+                                   value="${this.value}" 
+                                   oninput="FutureModal.value = this.value"
+                                   placeholder="0,00">
+                        </div>
+
+                        <button class="btn-primary" style="margin-top: 20px;" onclick="FutureModal.save()">
+                            Salvar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    save() {
+        if (!this.desc || !this.value) {
+            alert('Preencha todos os campos');
+            return;
+        }
+
+        Store.addFutureExpense({
+            desc: this.desc,
+            value: parseFloat(this.value)
+        });
+
+        this.reset();
+        Modal.close();
+    },
+
+    reset() {
+        this.desc = '';
+        this.value = '';
+    }
+};
+
+// ===== MONTH DETAIL MODAL =====
+const MonthDetailModal = {
+    chartInstance: null,
+
+    render(yearMonth) {
+        const [year, month] = yearMonth.split('-');
+        
+        const monthTransactions = Store.data.transactions.filter(t => t.date.startsWith(yearMonth));
+        const incomes = monthTransactions.filter(t => t.type === 'income');
+        const expenses = monthTransactions.filter(t => t.type === 'expense');
+        
+        const paidFixed = Store.data.fixedExpenses.filter(f => 
+            Store.data.fixedStatus[yearMonth]?.[f.id]
+        );
+
+        const totalIncome = incomes.reduce((acc, t) => acc + t.value, 0);
+        const totalExpense = expenses.reduce((acc, t) => acc + t.value, 0) + 
+                            paidFixed.reduce((acc, f) => acc + f.value, 0);
+        const balance = totalIncome - totalExpense;
+
+        const categoryMap = new Map();
+        [...expenses, ...paidFixed.map(f => ({
+            value: f.value,
+            categoryId: f.categoryId,
+            desc: f.name + ' (Fixo)',
+            date: `${yearMonth}-${String(f.day).padStart(2, '0')}`
+        }))].forEach(t => {
+            const cat = Store.data.categories.find(c => c.id === t.categoryId);
+            if (!cat) return;
+            if (!categoryMap.has(cat.id)) {
+                categoryMap.set(cat.id, { name: cat.name, value: 0, color: cat.color });
+            }
+            categoryMap.get(cat.id).value += t.value;
+        });
+
+        const chartData = Array.from(categoryMap.values());
+        const hasData = chartData.length > 0;
+
+        // Render Chart.js after DOM update
+        if (hasData) {
+            setTimeout(() => {
+                this.renderChart('historyChart', chartData, balance);
+            }, 0);
+        }
+
+        return `
+            <div class="modal-overlay active" onclick="if(event.target===this) { MonthDetailModal.destroyChart(); Modal.close(); }">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 style="text-transform: capitalize;">${getFullMonthName(parseInt(month))} ${year}</h2>
+                        <button class="btn-close" onclick="MonthDetailModal.destroyChart(); Modal.close();">
+                            ${Icons.x}
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="chartjs-container" style="margin-bottom: 24px; height: 200px;">
+                            ${hasData ? `
+                                <canvas id="historyChart"></canvas>
+                            ` : `
+                                <div class="donut-chart" style="background: conic-gradient(var(--border-color) 0deg 360deg); margin: 0 auto;">
+                                    <div class="donut-center">
+                                        <div class="amount ${balance >= 0 ? 'positive' : 'negative'}">${formatCurrency(balance)}</div>
+                                        <div class="label">Saldo</div>
+                                    </div>
+                                </div>
+                            `}
+                        </div>
+
+                        <div>
+                            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span style="color: var(--success);">⬇️ Entradas</span>
+                                <span style="margin-left: auto; font-size: 13px; color: var(--text-secondary); font-weight: normal;">
+                                    ${formatCurrency(totalIncome)}
+                                </span>
+                            </h3>
+                            <div class="transaction-list" style="margin-bottom: 24px;">
+                                ${incomes.length === 0 ? 
+                                    '<div style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Nenhuma entrada</div>' :
+                                    incomes.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
+                                        const cat = Store.data.categories.find(c => c.id === t.categoryId);
+                                        return `
+                                            <div class="transaction-item">
+                                                <div class="transaction-info">
+                                                    <div class="category-icon" style="background: ${cat?.color}20; color: ${cat?.color}; width: 40px; height: 40px; font-size: 18px;">
+                                                        ${cat?.icon || ''}
+                                                    </div>
+                                                    <div class="transaction-details">
+                                                        <div style="font-size: 13px; font-weight: 500;">${t.desc || cat?.name}</div>
+                                                        <div style="font-size: 10px; color: var(--text-secondary);">${t.date}</div>
+                                                    </div>
+                                                </div>
+                                                <span class="transaction-amount income" style="font-size: 13px;">+${formatCurrency(t.value)}</span>
+                                            </div>
+                                        `;
+                                    }).join('')
+                                }
+                            </div>
+
+                            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span style="color: var(--danger);">⬆️ Saídas</span>
+                                <span style="margin-left: auto; font-size: 13px; color: var(--text-secondary); font-weight: normal;">
+                                    ${formatCurrency(totalExpense)}
+                                </span>
+                            </h3>
+                            <div class="transaction-list">
+                                ${expenses.length === 0 && paidFixed.length === 0 ? 
+                                    '<div style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Nenhuma saída</div>' :
+                                    [...expenses, ...paidFixed.map(f => ({
+                                        id: `fixed-${f.id}`,
+                                        value: f.value,
+                                        desc: f.name + ' (Fixo)',
+                                        date: `${yearMonth}-${String(f.day).padStart(2, '0')}`,
+                                        categoryId: f.categoryId
+                                    }))].sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
+                                        const cat = Store.data.categories.find(c => c.id === t.categoryId);
+                                        return `
+                                            <div class="transaction-item">
+                                                <div class="transaction-info">
+                                                    <div class="category-icon" style="background: ${cat?.color}20; color: ${cat?.color}; width: 40px; height: 40px; font-size: 18px;">
+                                                        ${cat?.icon || ''}
+                                                    </div>
+                                                    <div class="transaction-details">
+                                                        <div style="font-size: 13px; font-weight: 500;">${t.desc || cat?.name}</div>
+                                                        <div style="font-size: 10px; color: var(--text-secondary);">${t.date}</div>
+                                                    </div>
+                                                </div>
+                                                <span class="transaction-amount expense" style="font-size: 13px;">-${formatCurrency(t.value)}</span>
+                                            </div>
+                                        `;
+                                    }).join('')
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderChart(containerId, data, balance) {
+        this.destroyChart();
+        
+        const ctx = document.getElementById(containerId);
+        if (!ctx) return;
+
+        const total = data.reduce((acc, item) => acc + item.value, 0);
+        
+        this.chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => d.name),
+                datasets: [{
+                    data: data.map(d => d.value),
+                    backgroundColor: data.map(d => d.color),
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'var(--bg-dark)',
+                        titleColor: 'var(--text-primary)',
+                        bodyColor: 'var(--text-primary)',
+                        borderColor: 'var(--border-color)',
+                        borderWidth: 1,
+                        cornerRadius: 12,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + formatCurrency(context.parsed);
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [{
+                id: 'centerText',
+                beforeDraw: function(chart) {
+                    const width = chart.width,
+                          height = chart.height,
+                          ctx = chart.ctx;
+                    
+                    ctx.restore();
+                    
+                    // Draw balance - SEMPRE BRANCO
+                    const fontSize = (height / 114).toFixed(2);
+                    ctx.font = `bold ${fontSize}em sans-serif`;
+                    ctx.textBaseline = "middle";
+                    ctx.fillStyle = '#ffffff'; // BRANCO SEMPRE
+                    
+                    const text = formatCurrency(balance),
+                          textX = Math.round((width - ctx.measureText(text).width) / 2),
+                          textY = height / 2 - 5;
+                    
+                    ctx.fillText(text, textX, textY);
+                    
+                    // Draw label
+                    ctx.font = `${(height / 200).toFixed(2)}em sans-serif`;
+                    ctx.fillStyle = 'var(--text-secondary)';
+                    const label = 'Saldo',
+                          labelX = Math.round((width - ctx.measureText(label).width) / 2),
+                          labelY = height / 2 + 15;
+                    
+                    ctx.fillText(label, labelX, labelY);
+                    ctx.save();
+                }
+            }]
+        });
+    },
+
+    destroyChart() {
+        if (this.chartInstance) {
+            this.chartInstance.destroy();
+            this.chartInstance = null;
+        }
+    }
+};
+
+// ===== MAIN APP =====
+const App = {
+    init() {
+        Store.init();
+        this.render();
+    },
+
+    render() {
+        const app = document.getElementById('app');
+        
+        let content = '';
+        
+        if (Router.currentRoute === '/') {
+            content = DashboardView.render();
+        } else if (Router.currentRoute === '/history') {
+            content = HistoryView.render();
+        }
+
+        let modalContent = '';
+        if (Modal.current === 'transaction') {
+            modalContent = TransactionModal.render();
+        } else if (Modal.current === 'fixed') {
+            modalContent = FixedModal.render();
+        } else if (Modal.current === 'future') {
+            modalContent = FutureModal.render();
+        } else if (Modal.current === 'monthDetail') {
+            modalContent = MonthDetailModal.render(Modal.props.yearMonth);
+        } else if (Modal.current === 'deleteConfirm') {
+            modalContent = DeleteConfirmModal.render(Modal.props);
+        }
+
+        const navigation = !Modal.current ? `
+            <nav class="navigation">
+                <button class="nav-item ${Router.currentRoute === '/' ? 'active' : ''}" onclick="Router.navigate('/')">
+                    ${Icons.home}
+                    <span>Início</span>
+                </button>
+                <div class="nav-spacer"></div>
+                <button class="nav-item ${Router.currentRoute === '/history' ? 'active' : ''}" onclick="Router.navigate('/history')">
+                    ${Icons.chart}
+                    <span>Histórico</span>
+                </button>
+            </nav>
+            <button class="fab" onclick="Modal.open('transaction')">
+                ${Icons.plus}
+            </button>
+        ` : '';
+
+        app.innerHTML = content + navigation + modalContent;
+    }
+};
+
+// ===== INITIALIZE =====
+window.addEventListener('DOMContentLoaded', () => {
+    App.init();
+});
+
+// ===== EXPOSE TO WINDOW =====
+window.Router = Router;
+window.Modal = Modal;
+window.DashboardView = DashboardView;
+window.HistoryView = HistoryView;
+window.TransactionModal = TransactionModal;
+window.CategoryModal = CategoryModal;
+window.FixedModal = FixedModal;
+window.FutureModal = FutureModal;
+window.MonthDetailModal = MonthDetailModal;
+window.DeleteConfirmModal = DeleteConfirmModal;
+window.Store = Store;
+window.App = App;
+window.LongPress = LongPress;
+window.TransactionDelete = TransactionDelete;
+window.ChartManager = ChartManager;
+
+</script>
+
+</body>
+</html>
