@@ -2,7 +2,7 @@
   "name": "FinControl",
   "short_name": "FinControl",
   "start_url": "/controle-financeiro/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#0f172a",
   "theme_color": "#01BAEF",
   "orientation": "portrait",
